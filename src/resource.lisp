@@ -1,7 +1,9 @@
 (defpackage ningle-admin/resource
   (:use :cl :ningle-admin/conditions)
   (:shadow #:list #:delete #:get)
-  (:export #:resource
+  (:export #:*resources*
+           #:*register-hook*
+           #:resource
            #:register
            #:find-resource
            #:list-resources
@@ -35,6 +37,9 @@
 (defparameter *resources* (make-hash-table :test 'eq)
   "Table mapping resource keyword names to `resource' instances.")
 
+(defvar *register-hook* nil
+  "Hook function called with the new `resource' instance when `register' is called.")
+
 (defclass resource ()
   ((name          :initarg :name          :accessor resource-name          :type keyword)
    (model         :initarg :model         :accessor resource-model)
@@ -58,7 +63,7 @@
                             :name name
                             :model model
                             :form form
-                            :url-prefix (or url-prefix (format nil "/admin/~(~A~)" name))
+                            :url-prefix (or url-prefix (format nil "/~(~A~)" name))
                             :template-list template-list
                             :template-view template-view
                             :template-add template-add
@@ -70,6 +75,8 @@
                             :on-save on-save
                             :on-delete on-delete)))
     (setf (gethash name *resources*) res)
+    (when *register-hook*
+      (funcall *register-hook* res))
     res))
 
 (defun find-resource (name)

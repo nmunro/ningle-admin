@@ -5,6 +5,13 @@
         :ningle-admin/controllers)
   (:shadowing-import-from :ningle-admin/resource #:list #:get #:delete)
   (:export
+   ;; Sub-application & Config
+   #:*app*
+   #:setup
+   #:*mount-path*
+   #:*auth-check*
+   #:*render-fn*
+
    ;; Conditions
    #:admin-error
    #:not-found-error
@@ -40,8 +47,7 @@
    #:delete
    #:populate-form
 
-   ;; Controllers & Mounting
-   #:*auth-check*
+   ;; Controllers
    #:def-controller
    #:render-list
    #:render-add
@@ -52,48 +58,22 @@
 
 (in-package :ningle-admin)
 
-(defun mount (app &key (auth-check nil) (render-fn #'djula:render-template*))
-  "Mount all registered admin resource routes onto the NINGLE APP instance."
-  (when auth-check
-    (setf *auth-check* auth-check))
+(defun setup (&key (mount-path "/admin") (auth-check (lambda () t)) (render-fn #'djula:render-template*))
+  "Configure ningle-admin settings."
+  (setf *mount-path* mount-path)
+  (setf *auth-check* auth-check)
+  (setf *render-fn* render-fn))
 
+;; Default landing route on *app*
+(setf (ningle:route *app* "/" :method :GET)
+      (lambda (params)
+        (declare (ignore params))
+        (when *auth-check* (funcall *auth-check*))
+        (funcall *render-fn* "dradis/admin/admin.html")))
+
+(defun mount (app &key (auth-check nil) (render-fn nil))
+  "Legacy/convenience mounter: mounts routes directly onto an external Ningle app if desired."
+  (when auth-check (setf *auth-check* auth-check))
+  (when render-fn (setf *render-fn* render-fn))
   (dolist (resource (list-resources))
-    (let ((prefix (resource-url-prefix resource))
-          (name   (resource-name resource)))
-
-      ;; 1. List
-      (setf (ningle:route app prefix :method :GET)
-            (lambda (params)
-              (when *auth-check* (funcall *auth-check*))
-              (render-list name params :render-fn render-fn)))
-
-      ;; 2. Add form
-      (setf (ningle:route app (format nil "~A/new" prefix) :method :GET)
-            (lambda (params)
-              (when *auth-check* (funcall *auth-check*))
-              (render-add name params :render-fn render-fn)))
-
-      ;; 3. Create
-      (setf (ningle:route app (format nil "~A/new" prefix) :method :POST)
-            (lambda (params)
-              (when *auth-check* (funcall *auth-check*))
-              (execute-save name params)))
-
-      ;; 4. View / Edit form
-      (setf (ningle:route app (format nil "~A/:id" prefix) :method :GET)
-            (lambda (params)
-              (when *auth-check* (funcall *auth-check*))
-              (render-view name params :render-fn render-fn)))
-
-      ;; 5. Update
-      (setf (ningle:route app (format nil "~A/:id" prefix) :method :POST)
-            (lambda (params)
-              (when *auth-check* (funcall *auth-check*))
-              (execute-save name params)))
-
-      ;; 6. Delete
-      (setf (ningle:route app (format nil "~A/:id" prefix) :method :DELETE)
-            (lambda (params)
-              (when *auth-check* (funcall *auth-check*))
-              (execute-delete name params))))))
-
+    (attach-resource-routes app resource)))
