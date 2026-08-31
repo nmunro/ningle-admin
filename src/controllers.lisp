@@ -41,6 +41,7 @@
          (page     (or (parse-integer (or (ingle:get-param "page" params) "1") :junk-allowed t) 1))
          (limit    (or (parse-integer (or (ingle:get-param "limit" params) "15") :junk-allowed t) 15)))
     (flet ((fetch (limit offset)
+             (declare (ignore offset))
              (list resource :page page :limit limit :params params)))
       (mito-pager:with-pager ((items pager #'fetch :page page :limit limit))
         (let* ((data (if (resource-serializer resource)
@@ -122,7 +123,7 @@
     (setf (ningle:route app (format nil "~A/:id" prefix) :method :DELETE)
           (lambda (params)
             (when *auth-check* (funcall *auth-check*))
-            (execute-delete name params))))))
+            (execute-delete name params)))))
 
 ;; Wire up auto-attaching of routes on registration
 (setf ningle-admin/resource:*register-hook*
