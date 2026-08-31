@@ -36,6 +36,15 @@
 ;;; Generic Controller Actions
 ;;; ---------------------------------------------------------------------------
 
+(defun %current-script-name ()
+  "Return SCRIPT_NAME from the current Clack request environment, falling back to *mount-path*."
+  (or (and (boundp 'ningle:*request*)
+           ningle:*request*
+           (let ((sn (getf (ningle:request-env ningle:*request*) :script-name)))
+             (when (and sn (not (string= sn ""))) sn)))
+      *mount-path*
+      "/admin"))
+
 (defun render-list (resource-name params &key (render-fn *render-fn*))
   (let* ((resource (find-resource resource-name))
          (page     (or (parse-integer (or (ingle:get-param "page" params) "1") :junk-allowed t) 1))
@@ -53,10 +62,11 @@
 
 (defun render-add (resource-name params &key (render-fn *render-fn*))
   (declare (ignore params))
-  (let ((resource (find-resource resource-name)))
+  (let ((resource (find-resource resource-name))
+        (script-name (%current-script-name)))
     (if (resource-form resource)
         (let ((form (cl-forms:find-form (resource-form resource))))
-          (setf (slot-value form 'cl-forms::action) (format nil "~A~A/new" *mount-path* (resource-url-prefix resource)))
+          (setf (slot-value form 'cl-forms::action) (format nil "~A~A/new" script-name (resource-url-prefix resource)))
           (funcall render-fn (resource-template-add resource) :form form :resource resource))
         (funcall render-fn (resource-template-add resource) :resource resource))))
 
@@ -66,17 +76,20 @@
          (item     (get resource id))
          (form     (when (resource-form resource)
                      (cl-forms:find-form (resource-form resource))))
-         (var-name (resource-template-var resource)))
+         (var-name (resource-template-var resource))
+         (script-name (%current-script-name)))
     (when form
-      (setf (slot-value form 'cl-forms::action) (format nil "~A~A/~A" *mount-path* (resource-url-prefix resource) id))
+      (setf (slot-value form 'cl-forms::action) (format nil "~A~A/~A" script-name (resource-url-prefix resource) id))
       (populate-form resource form item))
     (funcall render-fn (resource-template-view resource) var-name item :form form :resource resource)))
 
 (defun execute-save (resource-name params)
   (let* ((resource (find-resource resource-name))
-         (id       (ingle:get-param :id params)))
+         (id       (ingle:get-param :id params))
+         (script-name (%current-script-name)))
     (save resource params id)
-    (ingle:redirect (format nil "~A~A" *mount-path* (resource-url-prefix resource)))))
+    (ingle:redirect (format nil "~A~A" script-name (resource-url-prefix resource)))))
+
 
 (defun execute-delete (resource-name params)
   (let ((resource (find-resource resource-name))
