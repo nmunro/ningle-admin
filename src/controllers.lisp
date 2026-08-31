@@ -22,22 +22,26 @@
 (defvar *auth-check* (lambda () t))
 (defvar *render-fn* #'djula:render-template*)
 
+(defmacro with-auth-guard (&body body)
+  `(let ((orig-status (lack.response:response-status ningle:*response*)))
+     (let ((auth-res (when *auth-check* (funcall *auth-check*))))
+       (cond
+         (auth-res auth-res)
+         ((and (/= (lack.response:response-status ningle:*response*) orig-status)
+               (>= (lack.response:response-status ningle:*response*) 300))
+          "")
+         (t
+          (progn ,@body))))))
+
 (defmacro def-controller (name args &body body)
   (multiple-value-bind (remaining-forms declarations doc-string)
       (alexandria:parse-body body :documentation t)
     `(defun ,name ,args
        ,@(when doc-string (cl:list doc-string))
        ,@declarations
-       (let ((auth-res (when *auth-check* (funcall *auth-check*))))
-         (if auth-res
-             auth-res
-             (progn ,@remaining-forms))))))
+       (with-auth-guard
+         ,@remaining-forms))))
 
-(defmacro with-auth-guard (&body body)
-  `(let ((auth-res (when *auth-check* (funcall *auth-check*))))
-     (if auth-res
-         auth-res
-         (progn ,@body))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Generic Controller Actions
