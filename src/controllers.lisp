@@ -28,9 +28,16 @@
     `(defun ,name ,args
        ,@(when doc-string (cl:list doc-string))
        ,@declarations
-       (when *auth-check*
-         (funcall *auth-check*))
-       ,@remaining-forms)))
+       (let ((auth-res (when *auth-check* (funcall *auth-check*))))
+         (if auth-res
+             auth-res
+             (progn ,@remaining-forms))))))
+
+(defmacro with-auth-guard (&body body)
+  `(let ((auth-res (when *auth-check* (funcall *auth-check*))))
+     (if auth-res
+         auth-res
+         (progn ,@body))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Generic Controller Actions
@@ -106,38 +113,38 @@
     ;; 1. List
     (setf (ningle:route app prefix :method :GET)
           (lambda (params)
-            (when *auth-check* (funcall *auth-check*))
-            (render-list name params :render-fn *render-fn*)))
+            (with-auth-guard
+              (render-list name params :render-fn *render-fn*))))
 
     ;; 2. Add form
     (setf (ningle:route app (format nil "~A/new" prefix) :method :GET)
           (lambda (params)
-            (when *auth-check* (funcall *auth-check*))
-            (render-add name params :render-fn *render-fn*)))
+            (with-auth-guard
+              (render-add name params :render-fn *render-fn*))))
 
     ;; 3. Create
     (setf (ningle:route app (format nil "~A/new" prefix) :method :POST)
           (lambda (params)
-            (when *auth-check* (funcall *auth-check*))
-            (execute-save name params)))
+            (with-auth-guard
+              (execute-save name params))))
 
     ;; 4. View / Edit form
     (setf (ningle:route app (format nil "~A/:id" prefix) :method :GET)
           (lambda (params)
-            (when *auth-check* (funcall *auth-check*))
-            (render-view name params :render-fn *render-fn*)))
+            (with-auth-guard
+              (render-view name params :render-fn *render-fn*))))
 
     ;; 5. Update
     (setf (ningle:route app (format nil "~A/:id" prefix) :method :POST)
           (lambda (params)
-            (when *auth-check* (funcall *auth-check*))
-            (execute-save name params)))
+            (with-auth-guard
+              (execute-save name params))))
 
     ;; 6. Delete
     (setf (ningle:route app (format nil "~A/:id" prefix) :method :DELETE)
           (lambda (params)
-            (when *auth-check* (funcall *auth-check*))
-            (execute-delete name params)))))
+            (with-auth-guard
+              (execute-delete name params))))))
 
 ;; Wire up auto-attaching of routes on registration
 (setf ningle-admin/resource:*register-hook*
