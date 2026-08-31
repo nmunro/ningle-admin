@@ -1,0 +1,10 @@
+*.fasl
+*.dx64fsl
+*.lx64fsl
+*.x86f
+.fasl/
+.qlot/
+qlfile.lock
+.env
+*~
+.#*

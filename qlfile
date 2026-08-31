@@ -1,0 +1,11 @@
+ql clack
+ql djula
+github mmontone/cl-forms :branch master
+github nmunro/envy-ningle
+ql mito
+ql ningle
+git ingle https://codeberg.org/martianh/ingle.git :branch main
+ql mito-pager
+ql alexandria
+ql sxql
+ql str
