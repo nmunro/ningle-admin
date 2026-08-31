@@ -62,37 +62,38 @@
           (name   (resource-name resource)))
 
       ;; 1. List
-      (ningle:route app prefix :method :GET
-                    (lambda (params)
-                      (when *auth-check* (funcall *auth-check*))
-                      (render-list name params :render-fn render-fn)))
+      (setf (ningle:route app prefix :method :GET)
+            (lambda (params)
+              (when *auth-check* (funcall *auth-check*))
+              (render-list name params :render-fn render-fn)))
 
       ;; 2. Add form
-      (ningle:route app (format nil "~A/new" prefix) :method :GET
-                    (lambda (params)
-                      (when *auth-check* (funcall *auth-check*))
-                      (render-add name params :render-fn render-fn)))
+      (setf (ningle:route app (format nil "~A/new" prefix) :method :GET)
+            (lambda (params)
+              (when *auth-check* (funcall *auth-check*))
+              (render-add name params :render-fn render-fn)))
 
       ;; 3. Create
-      (ningle:route app (format nil "~A/new" prefix) :method :POST
-                    (lambda (params)
-                      (when *auth-check* (funcall *auth-check*))
-                      (execute-save name params)))
+      (setf (ningle:route app (format nil "~A/new" prefix) :method :POST)
+            (lambda (params)
+              (when *auth-check* (funcall *auth-check*))
+              (execute-save name params)))
 
       ;; 4. View / Edit form
-      (ningle:route app (format nil "~A/:id" prefix) :method :GET
-                    (lambda (params)
-                      (when *auth-check* (funcall *auth-check*))
-                      (render-view name params :render-fn render-fn)))
+      (setf (ningle:route app (format nil "~A/:id" prefix) :method :GET)
+            (lambda (params)
+              (when *auth-check* (funcall *auth-check*))
+              (render-view name params :render-fn render-fn)))
 
       ;; 5. Update
-      (ningle:route app (format nil "~A/:id" prefix) :method :POST
-                    (lambda (params)
-                      (when *auth-check* (funcall *auth-check*))
-                      (execute-save name params)))
+      (setf (ningle:route app (format nil "~A/:id" prefix) :method :POST)
+            (lambda (params)
+              (when *auth-check* (funcall *auth-check*))
+              (execute-save name params)))
 
       ;; 6. Delete
-      (ningle:route app (format nil "~A/:id" prefix) :method :DELETE
-                    (lambda (params)
-                      (when *auth-check* (funcall *auth-check*))
-                      (execute-delete name params))))))
+      (setf (ningle:route app (format nil "~A/:id" prefix) :method :DELETE)
+            (lambda (params)
+              (when *auth-check* (funcall *auth-check*))
+              (execute-delete name params))))))
+
