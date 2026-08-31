@@ -40,10 +40,11 @@
   "Return SCRIPT_NAME from the current Clack request environment, falling back to *mount-path*."
   (or (and (boundp 'ningle:*request*)
            ningle:*request*
-           (let ((sn (getf (ningle:request-env ningle:*request*) :script-name)))
+           (let ((sn (lack.request:request-script-name ningle:*request*)))
              (when (and sn (not (string= sn ""))) sn)))
       *mount-path*
       "/admin"))
+
 
 (defun render-list (resource-name params &key (render-fn *render-fn*))
   (let* ((resource (find-resource resource-name))
